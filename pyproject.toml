@@ -1,0 +1,17 @@
+[project]
+name = "internal-link-analyzer"
+version = "0.1.0"
+description = "Internal linking audit engine for local SEO websites"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0",
+    "pydantic>=2.0",
+    "click>=8.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

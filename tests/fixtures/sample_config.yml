@@ -1,0 +1,18 @@
+client: sample
+domain: example.com
+services:
+  - slug: plumber
+    display: Plumber
+    aliases: []
+locations:
+  - slug: los-angeles
+    display: Los Angeles
+    aliases: []
+    neighborhoods:
+      - slug: los-feliz
+        display: Los Feliz
+subservices:
+  - parent: plumber
+    slug: 24-hour
+    display: 24 Hour
+url_patterns_to_ignore: []

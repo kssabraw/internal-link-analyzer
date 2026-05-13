@@ -1,0 +1,17 @@
+# Client data — never committed
+clients/*/input/
+clients/*/output/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.env

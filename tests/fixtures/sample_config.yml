@@ -4,15 +4,24 @@ services:
   - slug: plumber
     display: Plumber
     aliases: []
+  - slug: electrician
+    display: Electrician
+    aliases: []
 locations:
   - slug: los-angeles
     display: Los Angeles
-    aliases: []
+    aliases: [la]
     neighborhoods:
       - slug: los-feliz
         display: Los Feliz
+  - slug: chicago
+    display: Chicago
+    aliases: []
+    neighborhoods: []
 subservices:
   - parent: plumber
     slug: 24-hour
     display: 24 Hour
-url_patterns_to_ignore: []
+    aliases: []
+url_patterns_to_ignore:
+  - ^/cdn-cgi/

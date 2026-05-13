@@ -21,14 +21,19 @@ from engine.config import ClientConfig
 from engine.registry import SiteRegistry
 from engine.violations import Violation
 
-# Only silo violations produce per-page "add this link" action items.
-# click_depth.unreachable requires judgment about where to link from
-# (separate section in the report).
-_ACTION_RULE_PREFIXES = (
+# Silo violations produce straightforward per-page "add this link" rows.
+_SILO_RULE_PREFIXES = (
     "service_silo.missing",
     "location_silo.missing",
     "neighborhood_silo.missing",
 )
+
+# Sentinel values used in CSV columns for non-"add link" actions, so a reader
+# can sort/filter the file and still understand what to do.
+_REDIRECT_ANCHOR = "(server-side 301 redirect)"
+_CREATE_PAGE_PLACEHOLDER = "(create new page)"
+_REMOVE_LINKS_PLACEHOLDER = "(reduce links — see why)"
+_ADD_FROM_HIGHER_PLACEHOLDER = "(add a link to this page from a higher-level page)"
 
 
 def _service_display(slug: str | None, config: ClientConfig) -> str:
@@ -103,7 +108,7 @@ def _suggested_anchor(target, config: ClientConfig) -> str:
 
 
 def _rule_explanation(rule: str) -> str:
-    """One-line plain-English explanation of why this link is needed."""
+    """One-line plain-English explanation of the action."""
     if rule == "service_silo.missing_local_landing_link":
         return "Service page should link down to each city/location landing for this service"
     if rule == "service_silo.missing_subservice_landing_link":
@@ -116,7 +121,107 @@ def _rule_explanation(rule: str) -> str:
         return "Neighborhood pages should link to their sibling neighborhoods (same parent city)"
     if rule == "neighborhood_silo.missing_neighborhood_service_link":
         return "Neighborhood page should link to each service offered in this neighborhood"
+    if rule.startswith("canonical_conflicts.duplicate_"):
+        return (
+            "URL duplicates a canonical page — 301-redirect to the canonical "
+            "to consolidate ranking signals and stop splitting link equity"
+        )
+    if rule.endswith("_page_missing"):
+        return (
+            "Site has no canonical page for this universal-nav target — create "
+            "one at the SOP default path, or add the actual path to "
+            "path_aliases in config.yml"
+        )
+    if rule == "click_depth.exceeds_three_clicks":
+        return (
+            "Page is more than 3 clicks from home; add an internal link to it "
+            "from a higher-level page (services hub, top-level service, or a "
+            "well-linked blog post) to flatten depth"
+        )
+    if rule == "click_depth.unreachable":
+        return (
+            "Page has no incoming internal links; add one from a logical "
+            "parent or 301-redirect/delete if obsolete"
+        )
+    if rule == "blog_link_budget.too_many_service_links":
+        return (
+            "Blog post links to more than one service page — SOP allows "
+            "exactly one. Remove all but the most relevant service link"
+        )
+    if rule == "blog_link_budget.too_many_silo_blog_links":
+        return (
+            "Blog post links to too many other blog posts — reduce to the "
+            "SOP cap of related-post links"
+        )
+    if rule == "blog_link_budget.too_few_silo_blog_links":
+        return (
+            "Blog post has too few related-post links — add internal links "
+            "to relevant sibling blog posts up to the SOP minimum"
+        )
+    if rule == "blog_link_budget.missing_service_link":
+        return (
+            "Blog post does not link to any service page — add exactly one "
+            "service link relevant to the post topic"
+        )
     return rule
+
+
+def _format_canonical_action(v: Violation) -> dict[str, str] | None:
+    """A canonical-conflict violation becomes a redirect action.
+
+    `source_url` is the duplicate URL; `expected` is the canonical to redirect to.
+    """
+    if v.expected is None:
+        return None
+    return {
+        "source_url": v.source_url,
+        "target_url": v.expected,
+        "anchor": _REDIRECT_ANCHOR,
+        "rule": v.rule,
+        "explanation": _rule_explanation(v.rule),
+    }
+
+
+def _format_missing_page_action(v: Violation) -> dict[str, str]:
+    """A universal_nav `_page_missing` violation becomes a 'create this page' action."""
+    return {
+        "source_url": _CREATE_PAGE_PLACEHOLDER,
+        "target_url": v.expected or "",
+        "anchor": "",
+        "rule": v.rule,
+        "explanation": _rule_explanation(v.rule),
+    }
+
+
+def _format_click_depth_action(v: Violation) -> dict[str, str]:
+    """A click_depth violation becomes an 'add a link from a higher-level page' action."""
+    return {
+        "source_url": _ADD_FROM_HIGHER_PLACEHOLDER,
+        "target_url": v.source_url,
+        "anchor": "",
+        "rule": v.rule,
+        "explanation": _rule_explanation(v.rule),
+    }
+
+
+def _format_blog_budget_action(v: Violation) -> dict[str, str]:
+    """A blog_link_budget violation becomes a 'review the link mix on this post' action."""
+    if v.rule.startswith("blog_link_budget.too_many"):
+        target = _REMOVE_LINKS_PLACEHOLDER
+        anchor = ""
+    elif v.rule == "blog_link_budget.missing_service_link":
+        target = "(add one relevant service link)"
+        anchor = ""
+    else:
+        target = "(add related-post links up to SOP minimum)"
+        anchor = ""
+    return {
+        "source_url": v.source_url,
+        "target_url": target,
+        "anchor": anchor,
+        "rule": v.rule,
+        "explanation": _rule_explanation(v.rule),
+    }
 
 
 def write_action_list(
@@ -127,25 +232,70 @@ def write_action_list(
     registry: SiteRegistry,
     config: ClientConfig,
 ) -> None:
-    """Write action_list.md and action_list.csv from the silo violations."""
-    items: list[dict[str, str]] = []
-    for v in violations:
-        if not any(v.rule.startswith(p) for p in _ACTION_RULE_PREFIXES):
-            continue
-        target = (
-            registry.get_by_url(v.expected) if v.expected is not None else None
-        )
-        items.append(
-            {
-                "source_url": v.source_url,
-                "target_url": v.expected or "",
-                "anchor": _suggested_anchor(target, config),
-                "rule": v.rule,
-                "explanation": _rule_explanation(v.rule),
-            }
-        )
+    """Write action_list.md and action_list.csv from auditor violations.
 
-    # Unreachable pages (need links FROM somewhere TO them - no specific source)
+    Action categories:
+    - Silo (`service_silo.*`, `location_silo.*`, `neighborhood_silo.*`) →
+      "edit page X, add link to Y."
+    - Canonical conflicts (`canonical_conflicts.duplicate_*`) →
+      "301-redirect this URL to the canonical."
+    - Universal-nav missing pages (`universal_nav.*_page_missing`) →
+      "create this canonical page."
+    - Click depth (`click_depth.exceeds_three_clicks`, `.unreachable`) →
+      "add an incoming link to this page from a higher-level page."
+    - Blog link budget (`blog_link_budget.*`) →
+      "reduce / add blog-post links to meet the SOP budget."
+    """
+    silo_items: list[dict[str, str]] = []
+    redirect_items: list[dict[str, str]] = []
+    create_page_items: list[dict[str, str]] = []
+    click_depth_items: list[dict[str, str]] = []
+    blog_budget_items: list[dict[str, str]] = []
+
+    for v in violations:
+        if any(v.rule.startswith(p) for p in _SILO_RULE_PREFIXES):
+            target = (
+                registry.get_by_url(v.expected)
+                if v.expected is not None
+                else None
+            )
+            silo_items.append(
+                {
+                    "source_url": v.source_url,
+                    "target_url": v.expected or "",
+                    "anchor": _suggested_anchor(target, config),
+                    "rule": v.rule,
+                    "explanation": _rule_explanation(v.rule),
+                }
+            )
+        elif v.rule.startswith("canonical_conflicts.duplicate_"):
+            row = _format_canonical_action(v)
+            if row is not None:
+                redirect_items.append(row)
+        elif v.rule.endswith("_page_missing") and v.rule.startswith(
+            "universal_nav."
+        ):
+            create_page_items.append(_format_missing_page_action(v))
+        elif v.rule in (
+            "click_depth.exceeds_three_clicks",
+            "click_depth.unreachable",
+        ):
+            click_depth_items.append(_format_click_depth_action(v))
+        elif v.rule.startswith("blog_link_budget."):
+            blog_budget_items.append(_format_blog_budget_action(v))
+
+    # `items` is the unified action stream that drives the CSV (in
+    # priority order) and the per-page Markdown sections.
+    items: list[dict[str, str]] = (
+        create_page_items
+        + redirect_items
+        + silo_items
+        + click_depth_items
+        + blog_budget_items
+    )
+
+    # Unreachable pages also surface in a separate Markdown section so the
+    # human reviewer sees them as a list, not just buried in click_depth rows.
     unreachable: list[str] = [
         v.source_url
         for v in violations
@@ -189,8 +339,9 @@ def write_action_list(
     out(f"# Internal Linking Action List - {config.client}")
     out("")
     out(
-        "_Punch list of internal links to add. Each item is "
-        "'edit this page, add this link, use this anchor.'_"
+        "_Punch list of internal-linking work. Each row in `action_list.csv` "
+        "is one action: edit a page, redirect a URL, create a missing page, "
+        "or rebalance a blog post's outbound links._"
     )
     out("")
     out("## How to use")
@@ -199,18 +350,36 @@ def write_action_list(
         "1. Open `action_list.csv` in Excel - it has the same data, sortable."
     )
     out(
-        "2. For each page below, log into the CMS, edit the page, add the "
-        "missing link in the body content (or in a 'Service Areas' / "
-        "'Related Services' component if you use one)."
+        "2. Work top-down: create missing canonical pages first, then "
+        "redirects, then add missing internal links, then prune blog posts."
     )
     out("3. Use the suggested anchor text exactly when possible.")
     out("4. Check off each item as you go.")
     out("")
     out(
-        f"**Total pages needing work:** {len(by_source)}  "
-        f"**Total links to add:** {len(items)}"
+        f"**Total actions:** {len(items)}  "
+        f"**Pages / sources affected:** {len(by_source)}"
     )
     out("")
+
+    # Category breakdown so reviewers can see the shape at a glance.
+    category_counts: list[tuple[str, int]] = [
+        ("Create missing canonical pages", len(create_page_items)),
+        ("Redirect canonical-conflict duplicates", len(redirect_items)),
+        ("Add missing silo links", len(silo_items)),
+        ("Fix click-depth (add incoming links)", len(click_depth_items)),
+        ("Rebalance blog-post outbound links", len(blog_budget_items)),
+    ]
+    if any(n for _, n in category_counts):
+        out("## Action categories")
+        out("")
+        out("| Category | Count |")
+        out("|---|---:|")
+        for name, n in category_counts:
+            if n:
+                out(f"| {name} | {n:,} |")
+        out("")
+
     out("---")
     out("")
 

@@ -15,3 +15,4 @@ python audit.py --client <slug>
 | Client | Date | Files |
 |---|---|---|
 | `wheelhouseit/` | 2026-05-13 | `action_list.md`, `action_list.csv`, `summary.md` |
+| `zdscs/` | 2026-05-13 | `action_list.md`, `action_list.csv`, `summary.md` |

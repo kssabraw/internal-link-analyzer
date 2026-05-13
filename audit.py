@@ -11,7 +11,8 @@ from engine.classifier import (
     classify_all,
     read_urls,
 )
-from engine.config import load as load_config
+from engine.config import ClientConfig, load as load_config
+from engine.registry import SiteRegistry
 
 LOW_CONFIDENCE_THRESHOLD = 0.7
 
@@ -43,7 +44,9 @@ def main(
     print("not implemented")
 
 
-def _run_classify_only(client_dir: Path, config, verbose: bool) -> None:
+def _run_classify_only(
+    client_dir: Path, config: ClientConfig, verbose: bool
+) -> None:
     urls = read_urls(client_dir / "input")
     classifications, ignored = classify_all(urls, config)
 
@@ -58,10 +61,15 @@ def _run_classify_only(client_dir: Path, config, verbose: bool) -> None:
     ]
     _write_review(output_dir / "unclassified_urls.csv", review)
 
+    registry = SiteRegistry(classifications, config)
+    _write_registry_summary(output_dir / "registry_summary.csv", registry)
+
+    conflict_clusters = len(registry.get_canonical_conflicts())
     print(f"URLs read:       {len(urls)}")
     print(f"Classified:      {len(classifications)}")
     print(f"Ignored:         {len(ignored)}")
     print(f"For review:      {len(review)}")
+    print(f"Conflict clusters: {conflict_clusters}")
     if verbose:
         unknowns = sum(1 for c in classifications if c.page_type == PageType.UNKNOWN)
         low_conf = len(review) - unknowns
@@ -110,6 +118,22 @@ def _write_review(path: Path, review: list[PageClassification]) -> None:
             writer.writerow(
                 [c.url, c.page_type.value, c.raw_path, f"{c.confidence:.2f}", reason]
             )
+
+
+def _write_registry_summary(path: Path, registry: SiteRegistry) -> None:
+    type_counts: dict[PageType, int] = {
+        pt: len(registry.get_by_type(pt)) for pt in PageType
+    }
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["page_type", "count"])
+        for pt in PageType:
+            count = type_counts[pt]
+            if count > 0:
+                writer.writerow([pt.value, count])
+        writer.writerow(
+            ["canonical_conflict_clusters", len(registry.get_canonical_conflicts())]
+        )
 
 
 if __name__ == "__main__":

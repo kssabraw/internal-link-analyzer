@@ -108,7 +108,7 @@ def _build_indexes(config: ClientConfig) -> ClassifierIndexes:
     )
 
 
-def _normalize_url(url: str) -> str:
+def normalize_url(url: str) -> str:
     """Strip scheme/host/www; lowercase; drop trailing slash on non-root; drop query+fragment."""
     url = url.strip()
     if not url:
@@ -435,7 +435,7 @@ def classify(url: str, config: ClientConfig) -> PageClassification | None:
 def _classify_one(
     url: str, indexes: ClassifierIndexes
 ) -> PageClassification | None:
-    path = _normalize_url(url)
+    path = normalize_url(url)
     if _is_ignored(path, indexes.ignore_patterns):
         return None
     return _classify_path(url, path, indexes)

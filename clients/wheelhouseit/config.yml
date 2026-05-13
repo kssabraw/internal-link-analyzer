@@ -92,7 +92,7 @@ locations:
 
   - slug: nassau-county
     display: Nassau County
-    aliases: []
+    aliases: [nassau-county-ny]
     neighborhoods: []
 
   - slug: los-angeles

@@ -6,9 +6,9 @@ import pytest
 
 from engine.classifier import (
     PageType,
-    _normalize_url,
     classify,
     classify_all,
+    normalize_url,
 )
 from engine.config import ClientConfig, load as load_config
 
@@ -26,20 +26,20 @@ def config() -> ClientConfig:
 
 
 def test_normalize_strips_scheme_host_and_trailing_slash() -> None:
-    assert _normalize_url("https://example.com/about-us/") == "/about-us"
+    assert normalize_url("https://example.com/about-us/") == "/about-us"
 
 
 def test_normalize_root() -> None:
-    assert _normalize_url("https://example.com/") == "/"
-    assert _normalize_url("https://example.com") == "/"
+    assert normalize_url("https://example.com/") == "/"
+    assert normalize_url("https://example.com") == "/"
 
 
 def test_normalize_strips_query_and_fragment() -> None:
-    assert _normalize_url("https://example.com/foo/?q=1#frag") == "/foo"
+    assert normalize_url("https://example.com/foo/?q=1#frag") == "/foo"
 
 
 def test_normalize_lowercases() -> None:
-    assert _normalize_url("https://example.com/About-Us/") == "/about-us"
+    assert normalize_url("https://example.com/About-Us/") == "/about-us"
 
 
 # --------------------------------------------------------------------------- #

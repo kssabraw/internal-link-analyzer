@@ -1,0 +1,198 @@
+# Zero Down Supply Chain Solutions — Internal Linking Audit Config
+#
+# ZDSCS is a national B2B supply-chain solutions provider. They are NOT a
+# local-SEO business: no locations, no neighborhoods, no local landing pages.
+# Only the service-side of the SOP applies here.
+#
+# URL convention: nested under /services/[slug]/ (SOP-permitted alternate).
+# About Us lives at /company/about-us/; Contact at /contact/. Configured as
+# path_aliases below.
+#
+# Items prefixed CANONICAL-CONFLICT-WATCH are legacy root-level URLs that
+# duplicate a canonical /services/[slug]/ page — listed as service aliases so
+# the canonical_conflicts auditor flags them.
+
+client: zdscs
+domain: zdscs.com
+
+# ============================================================================
+# SERVICES (10 parent services per ZDSCS product catalog)
+# ============================================================================
+
+services:
+  - slug: parcel-audit
+    display: Parcel Audit
+    aliases:
+      - parcel-audit-service          # CANONICAL-CONFLICT-WATCH: /parcel-audit-service/
+      - parcel-audit-services         # CANONICAL-CONFLICT-WATCH: /parcel-audit-services/
+
+  - slug: freight-audit-and-payment
+    display: Freight Audit & Payment
+    aliases: []
+
+  - slug: carrier-contract-negotiation
+    display: Carrier Contract Optimization / Negotiation
+    aliases:
+      - parcel-contract-negotiation   # CANONICAL-CONFLICT-WATCH: /parcel-contract-negotiation/
+      - ups-contract-negotiation      # CANONICAL-CONFLICT-WATCH: /ups-contract-negotiation/
+
+  - slug: supply-chain-business-intelligence
+    display: Supply Chain Business Intelligence
+    aliases:
+      - supply-chain-analytics        # CANONICAL-CONFLICT-WATCH: /supply-chain-analytics/
+
+  - slug: freight-claims-management
+    display: Freight Claims Management
+    aliases:
+      - filing-carrier-claims         # CANONICAL-CONFLICT-WATCH: /filing-carrier-claims/
+
+  - slug: duty-drawback
+    display: Duty Drawback
+    aliases: []
+
+  - slug: transportation-management-system
+    display: Transportation Management System
+    aliases:
+      - tms                           # generic abbreviation
+      # NOTE: /transportation-management-system/ at root also exists (200).
+      # The classifier will match it as a flat top-level service via the canonical
+      # slug, which then conflicts with /services/transportation-management-system/.
+
+  - slug: packaging-optimization
+    display: Packaging Optimization
+    aliases: []
+
+  - slug: shipping-insurance
+    display: Shipping Insurance
+    aliases: []
+
+  - slug: parcel-spend-management
+    display: Parcel Spend Management
+    aliases: []
+
+# ============================================================================
+# Path aliases for fixed-name pages that don't live at the SOP default path
+# ============================================================================
+
+path_aliases:
+  about_us:
+    - /company/about-us
+  contact_us:
+    - /contact
+
+# ============================================================================
+# URL patterns to ignore (regex matched against the normalized path).
+# These pages are noise relative to the SOP page taxonomy.
+# ============================================================================
+
+url_patterns_to_ignore:
+  # ---- System / infrastructure ----
+  - ^/cdn-cgi/
+  - ^/wp-admin/
+  - ^/feed/?$
+  - ^/sitemap
+  - ^/404$
+  - ^/robots\.txt$
+
+  # ---- Blog noise: pagination, tag filters, category filters ----
+  - ^/blog/page/
+  - ^/blog/category/
+  - ^/blog/tag/
+  - ^/tag/
+  - ^/category/
+  - ^/page/
+
+  # ---- Events / case studies / company sub-pages (not in SOP taxonomy) ----
+  - ^/events?/?$
+  - ^/events/
+  - ^/event/
+  - ^/case-study/?$
+  - ^/case-study/
+  - ^/case_studies/
+  - ^/company/?$
+  - ^/company/resellers/?$
+  - ^/company/white-label/?$
+
+  # ---- Lead-flow / one-off pages ----
+  - ^/newsletter/?$
+  - ^/get-started/?$
+  - ^/demo/?$
+  - ^/livedemo/?$
+  - ^/our-process/?$
+  - ^/resource/?$
+  - ^/technology/?$
+  - ^/technology-preview/?$
+  - ^/managed-services/?$
+
+  # ---- Legacy services-hub redirect candidates (not live, but appear in links) ----
+  - ^/services/audit/?$
+  - ^/services/bill-pay/?$
+  - ^/services/business-intelligence/?$
+  - ^/services/freight-parcel-audit/?$
+  - ^/services/optimization/?$
+  - ^/services/parcel-claims/?$
+  - ^/services/insurance/?$
+  - ^/services/tms/?$
+  - ^/services/packaging-analysis/?$
+  - ^/services/cost-allocation-general-ledger-coding/?$
+  - ^/services/carrier-contract-negotiations/?$
+  - ^/services/carrier-contract-optimization-2/?$
+  - ^/services/freight-audit-and-payment-old/?$
+
+  # ---- Legacy root-level articles that should have been blog posts ----
+  # These all 200 but aren't in the SOP page taxonomy. Listed by prefix where
+  # possible, otherwise enumerated. Surfacing as UNKNOWN would inflate the
+  # review queue with content the SOP doesn't define rules for.
+  - ^/zero-down-
+  - ^/zero-supply-chain-
+  - ^/supply-chain-(visibility|optimization|technology|professionals|solutions|analytics|revolution|network|disrupt|business)
+  - ^/parcel-(audit-finding|audit-importance|forum|hottest)
+  - ^/transportation-(management-system-taking|spend-management-a-)
+  - ^/network-(analysis|optimization)
+  - ^/inbound-logistics-digital-revolution
+  - ^/innovation-and-logistics
+  - ^/introducing-revolutionary-new-tms
+  - ^/learn-more-about-our-leading-supply-chain
+  - ^/leveraging-3pn-competitive-advantage
+  - ^/orchestrators-of-the-supply-chain
+  - ^/our-cloud-based-technology
+  - ^/outsourcing-your-logistics
+  - ^/trusting-your-logistics-partner
+  - ^/unraveling-the-chain
+  - ^/three-clever-money-saving
+  - ^/the-(2022-gri|demand-of-supplies|future-of-freight|power-of-big-data|nine)
+  - ^/peak-season-surcharges
+  - ^/press-release-zero-
+  - ^/pros-to-know-
+  - ^/optimization-service-saved
+  - ^/managed-services-?$
+  - ^/join-us-live-demo
+  - ^/halfway-2018
+  - ^/gris-are-coming
+  - ^/get-accurate-2020
+  - ^/freight-spend-management-take-the-wheel
+  - ^/freight-spend-analysis
+  - ^/five-trends-for-2023
+  - ^/find-real-rate-increases
+  - ^/ecommerce-sizzling
+  - ^/e-commerce-surge
+  - ^/diversifying-your-carrier-portfolio
+  - ^/covid-19-
+  - ^/ceo-interview
+  - ^/celebrating-15-years
+  - ^/bita-adds-freightoptics
+  - ^/bid-management-three-steps
+  - ^/3-ways-to-solve-supply-chain
+  - ^/5-reasons-leverage
+  - ^/2023-general-rate-increase
+  - ^/2024-2025-
+  - ^/how-the-ups-teamster-deal
+  - ^/impact-rate-increase
+  - ^/managing-accessorial-charges
+  - ^/reshaping-your-supply-chain
+  - ^/shipping-charge-corrections
+  - ^/shipping-goes-wrong
+  - ^/usps-ending
+  - ^/ups-(peak-season|fedex)
+  - ^/what-(is-freight-optimization|is-packaging-analysis|is-shipping-insurance|you-need-to-know)
+  - ^/transportation-management-system-taking

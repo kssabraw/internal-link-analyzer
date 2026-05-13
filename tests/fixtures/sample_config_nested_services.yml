@@ -1,0 +1,20 @@
+client: sample-nested
+domain: example.com
+services:
+  - slug: plumber
+    display: Plumber
+    aliases: []
+  - slug: electrician
+    display: Electrician
+    aliases: []
+subservices:
+  - parent: plumber
+    slug: 24-hour
+    display: 24 Hour
+    aliases: []
+path_aliases:
+  about_us:
+    - /company/about-us
+  contact_us:
+    - /contact
+url_patterns_to_ignore: []

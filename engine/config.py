@@ -35,13 +35,27 @@ class SubserviceConfig(BaseModel):
     aliases: list[str] = []
 
 
+class PathAliases(BaseModel):
+    """Per-client overrides for fixed-name pages that don't live at the SOP default path.
+
+    Each list holds normalized paths (lowercase, leading slash, no trailing slash, no
+    query/fragment). Defaults are appended automatically by the classifier — clients
+    only need to list the non-default paths.
+    """
+
+    about_us: list[str] = []
+    contact_us: list[str] = []
+    privacy_policy: list[str] = []
+
+
 class ClientConfig(BaseModel):
     client: str
     domain: str
     services: list[ServiceConfig]
-    locations: list[LocationConfig]
+    locations: list[LocationConfig] = []
     subservices: list[SubserviceConfig] = []
     url_patterns_to_ignore: list[str] = []
+    path_aliases: PathAliases = PathAliases()
 
 
 def load(config_path: Path | str) -> ClientConfig:

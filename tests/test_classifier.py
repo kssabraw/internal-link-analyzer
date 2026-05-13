@@ -13,11 +13,20 @@ from engine.classifier import (
 from engine.config import ClientConfig, load as load_config
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample_config.yml"
+FIXTURE_NESTED = (
+    Path(__file__).parent / "fixtures" / "sample_config_nested_services.yml"
+)
 
 
 @pytest.fixture
 def config() -> ClientConfig:
     return load_config(FIXTURE)
+
+
+@pytest.fixture
+def nested_config() -> ClientConfig:
+    """Fixture for a service-only client using /services/[svc]/ + path aliases."""
+    return load_config(FIXTURE_NESTED)
 
 
 # --------------------------------------------------------------------------- #
@@ -315,3 +324,67 @@ def test_raw_path_populated(config: ClientConfig) -> None:
     c = classify("https://example.com/About-Us/", config)
     assert c is not None
     assert c.raw_path == "/about-us"
+
+
+# --------------------------------------------------------------------------- #
+# Nested /services/[svc]/ convention (SOP alternate) + configurable path aliases
+# --------------------------------------------------------------------------- #
+
+
+def test_nested_top_level_service(nested_config: ClientConfig) -> None:
+    c = classify("https://example.com/services/plumber/", nested_config)
+    assert c is not None
+    assert c.page_type == PageType.TOP_LEVEL_SERVICE
+    assert c.service == "plumber"
+    assert c.confidence == 1.0
+
+
+def test_nested_sub_service(nested_config: ClientConfig) -> None:
+    c = classify("https://example.com/services/plumber/24-hour/", nested_config)
+    assert c is not None
+    assert c.page_type == PageType.SUB_SERVICE
+    assert c.service == "plumber"
+    assert c.subservice == "24-hour"
+
+
+def test_services_hub_still_classifies(nested_config: ClientConfig) -> None:
+    """/services/ alone is still the services hub even with nested children present."""
+    c = classify("https://example.com/services/", nested_config)
+    assert c is not None
+    assert c.page_type == PageType.SERVICES_HUB
+
+
+def test_unknown_service_under_services_prefix(nested_config: ClientConfig) -> None:
+    """/services/[unknown-slug]/ falls through to UNKNOWN rather than guessing."""
+    c = classify("https://example.com/services/not-a-real-service/", nested_config)
+    assert c is not None
+    assert c.page_type == PageType.UNKNOWN
+
+
+def test_configured_about_us_alias(nested_config: ClientConfig) -> None:
+    c = classify("https://example.com/company/about-us/", nested_config)
+    assert c is not None
+    assert c.page_type == PageType.ABOUT_US
+
+
+def test_default_about_us_still_works(nested_config: ClientConfig) -> None:
+    """Configured aliases supplement the SOP default, they don't replace it."""
+    c = classify("https://example.com/about-us/", nested_config)
+    assert c is not None
+    assert c.page_type == PageType.ABOUT_US
+
+
+def test_configured_contact_alias(nested_config: ClientConfig) -> None:
+    c = classify("https://example.com/contact/", nested_config)
+    assert c is not None
+    assert c.page_type == PageType.CONTACT_US
+
+
+def test_flat_service_still_works_when_nested_convention_used(
+    config: ClientConfig,
+) -> None:
+    """The original flat /[svc]/ convention is unaffected by the new nested rule."""
+    c = classify("https://example.com/plumber/", config)
+    assert c is not None
+    assert c.page_type == PageType.TOP_LEVEL_SERVICE
+    assert c.service == "plumber"

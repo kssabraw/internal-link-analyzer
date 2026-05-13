@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from engine.classifier import PageClassification, PageType, normalize_url
 from engine.config import ClientConfig
@@ -15,6 +16,50 @@ from engine.config import ClientConfig
 # Page types excluded from canonical conflict detection.
 # UNKNOWN pages don't have meaningful identity attributes for clustering.
 _CONFLICT_EXCLUDED_TYPES: frozenset[PageType] = frozenset({PageType.UNKNOWN})
+
+
+def _canonical_rank(page: PageClassification, input_order: int) -> tuple:
+    """Sort key for picking the most-canonical URL within a conflict cluster.
+
+    Lower tuples come first. Preferences, in order:
+
+    1. URL has no query string (`?foo=bar`).
+    2. URL has no fragment (`#anchor`).
+    3. For TOP_LEVEL_SERVICE / SUB_SERVICE: URL path is nested under `/services/`
+       (the SOP-permitted nested convention). Has no effect on other page types.
+    4. URL path ends with a trailing slash (matches SOP convention which writes
+       every example with `/path/`).
+    5. Input order — preserves "first-encountered wins" semantics for clusters
+       where no other preference distinguishes the members.
+    """
+    parsed = urlparse(page.url)
+    has_query = bool(parsed.query)
+    has_fragment = bool(parsed.fragment)
+    path = parsed.path or ""
+
+    prefers_services_nesting = page.page_type in {
+        PageType.TOP_LEVEL_SERVICE,
+        PageType.SUB_SERVICE,
+    }
+    not_services_nested = (
+        1
+        if prefers_services_nesting and not path.startswith("/services/")
+        else 0
+    )
+
+    no_trailing_slash = 0 if (path.endswith("/") and path != "/") else 1
+    # `/` is the home page; trailing-slash check is moot. Score it 0 so home
+    # variants don't get penalized just because the path is short.
+    if path == "/":
+        no_trailing_slash = 0
+
+    return (
+        1 if has_query else 0,
+        1 if has_fragment else 0,
+        not_services_nested,
+        no_trailing_slash,
+        input_order,
+    )
 
 
 @dataclass(frozen=True)
@@ -142,12 +187,26 @@ class SiteRegistry:
         )
 
     def _compute_canonical_conflicts(self) -> list[list[PageClassification]]:
-        clusters: dict[_ConflictKey, list[PageClassification]] = defaultdict(list)
-        for page in self._pages:
+        clusters: dict[_ConflictKey, list[tuple[int, PageClassification]]] = (
+            defaultdict(list)
+        )
+        for input_order, page in enumerate(self._pages):
             if page.page_type in _CONFLICT_EXCLUDED_TYPES:
                 continue
-            clusters[self._conflict_key(page)].append(page)
-        return [pages for pages in clusters.values() if len(pages) >= 2]
+            clusters[self._conflict_key(page)].append((input_order, page))
+
+        # Sort each cluster so the most-canonical URL is first. Tiebreak on
+        # input-order preserves "first-encountered wins" semantics where the
+        # canonical preferences don't otherwise distinguish members.
+        result: list[list[PageClassification]] = []
+        for entries in clusters.values():
+            if len(entries) < 2:
+                continue
+            sorted_entries = sorted(
+                entries, key=lambda io_p: _canonical_rank(io_p[1], io_p[0])
+            )
+            result.append([p for _, p in sorted_entries])
+        return result
 
     # ----- public API -----
 

@@ -71,6 +71,15 @@ class ClassifierIndexes:
 
     ignore_patterns: list[re.Pattern[str]]
 
+    about_us_paths: frozenset[str]
+    """Normalized paths that classify as ABOUT_US (SOP default plus client aliases)."""
+
+    contact_us_paths: frozenset[str]
+    """Normalized paths that classify as CONTACT_US (SOP default plus client aliases)."""
+
+    privacy_policy_paths: frozenset[str]
+    """Normalized paths that classify as PRIVACY_POLICY (SOP default plus client aliases)."""
+
 
 def _build_indexes(config: ClientConfig) -> ClassifierIndexes:
     service_index: dict[str, str] = {}
@@ -99,12 +108,28 @@ def _build_indexes(config: ClientConfig) -> ClassifierIndexes:
 
     ignore_patterns = [re.compile(p) for p in config.url_patterns_to_ignore]
 
+    about_us_paths = frozenset(
+        {"/about-us", *(normalize_url(p) for p in config.path_aliases.about_us)}
+    )
+    contact_us_paths = frozenset(
+        {"/contact-us", *(normalize_url(p) for p in config.path_aliases.contact_us)}
+    )
+    privacy_policy_paths = frozenset(
+        {
+            "/privacy-policy",
+            *(normalize_url(p) for p in config.path_aliases.privacy_policy),
+        }
+    )
+
     return ClassifierIndexes(
         service_index=service_index,
         location_index=location_index,
         neighborhood_index=neighborhood_index,
         subservices_by_parent=subservices_by_parent,
         ignore_patterns=ignore_patterns,
+        about_us_paths=about_us_paths,
+        contact_us_paths=contact_us_paths,
+        privacy_policy_paths=privacy_policy_paths,
     )
 
 
@@ -174,22 +199,26 @@ def _classify_path(
     if path == "/":
         return PageClassification(url=url, page_type=PageType.HOME, raw_path=path)
 
+    # ---- Configurable fixed-name pages (About / Contact / Privacy) ----
+    # Checked before slug-based rules so a configured alias like `/company/about-us`
+    # wins over a hypothetical `/[company-service]/about-us`-style classification.
+    if path in indexes.about_us_paths:
+        return PageClassification(
+            url=url, page_type=PageType.ABOUT_US, raw_path=path
+        )
+    if path in indexes.contact_us_paths:
+        return PageClassification(
+            url=url, page_type=PageType.CONTACT_US, raw_path=path
+        )
+    if path in indexes.privacy_policy_paths:
+        return PageClassification(
+            url=url, page_type=PageType.PRIVACY_POLICY, raw_path=path
+        )
+
     segments = [s for s in path.split("/") if s]
 
-    # ---- Fixed-name pages ----
+    # ---- Other fixed-name pages ----
     match segments:
-        case ["about-us"]:
-            return PageClassification(
-                url=url, page_type=PageType.ABOUT_US, raw_path=path
-            )
-        case ["contact-us"]:
-            return PageClassification(
-                url=url, page_type=PageType.CONTACT_US, raw_path=path
-            )
-        case ["privacy-policy"]:
-            return PageClassification(
-                url=url, page_type=PageType.PRIVACY_POLICY, raw_path=path
-            )
         case ["services"]:
             return PageClassification(
                 url=url, page_type=PageType.SERVICES_HUB, raw_path=path
@@ -278,6 +307,16 @@ def _classify_path(
     # ---- 2-segment paths ----
     if len(segments) == 2:
         s1, s2 = segments
+
+        # /services/[service] — nested top-level service convention (SOP-permitted alt)
+        if s1 == "services" and s2 in svc_idx:
+            return PageClassification(
+                url=url,
+                page_type=PageType.TOP_LEVEL_SERVICE,
+                service=svc_idx[s2],
+                raw_path=path,
+                confidence=1.0,
+            )
 
         # [location][neighborhood]
         if s1 in loc_idx and s2 in nb_idx and nb_idx[s2][0] == loc_idx[s1]:
@@ -385,6 +424,19 @@ def _classify_path(
     # ---- 3-segment paths ----
     if len(segments) == 3:
         s1, s2, s3 = segments
+
+        # /services/[service]/[subservice] — nested sub-service convention
+        if s1 == "services" and s2 in svc_idx:
+            parent = svc_idx[s2]
+            if parent in sub_idx and s3 in sub_idx[parent]:
+                return PageClassification(
+                    url=url,
+                    page_type=PageType.SUB_SERVICE,
+                    service=parent,
+                    subservice=sub_idx[parent][s3],
+                    raw_path=path,
+                    confidence=1.0,
+                )
 
         # [location][service][subservice]
         if s1 in loc_idx and s2 in svc_idx:

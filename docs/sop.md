@@ -106,21 +106,25 @@ The tables below show every page type defined in this SOP, organized by tier. Pa
 | Page Type | URL Pattern | Example |
 |---|---|---|
 | Home Page | `/` | `site.com/` |
-| About Us | `/about-us/` | `site.com/about-us/` |
+| About Us | `/about-us/` (default) or a configured alias | `site.com/about-us/`, `site.com/company/about-us/` |
 | Bio Page | `/about-us/[name]/` | `site.com/about-us/jane-doe/` |
-| Contact Us | `/contact-us/` | `site.com/contact-us/` |
-| Privacy Policy | `/privacy-policy/` | `site.com/privacy-policy/` |
+| Contact Us | `/contact-us/` (default) or a configured alias | `site.com/contact-us/`, `site.com/contact/` |
+| Privacy Policy | `/privacy-policy/` (default) or a configured alias | `site.com/privacy-policy/` |
 | Services hub (when >20 services) | `/services/` | `site.com/services/` |
-| Top-Level Service Page | `/[service]/` | `site.com/plumber/` |
+| Top-Level Service Page | `/[service]/` (flat) **or** `/services/[service]/` (nested) | `site.com/plumber/`, `site.com/services/plumber/` |
 | Areas We Serve hub (when >20 locations) | `/areas-we-serve/` | `site.com/areas-we-serve/` |
 | Top-Level Location Page | `/[location]/` | `site.com/los-angeles/` |
 | Blog Archive | `/blog/` | `site.com/blog/` |
+
+The classifier accepts either the flat or nested service URL convention. A site picks one and uses it consistently; the engine doesn't care which, but the client config declares the chosen convention so the canonical-conflicts auditor can flag any pages that diverge from it.
+
+About Us / Contact Us / Privacy Policy paths are configurable per client because real-world CMSes regularly mount these under non-standard paths (e.g. `/company/about-us/`, `/contact/`). The engine treats the configured path as the canonical About Us / Contact Us / Privacy Policy page for that client and applies all rules accordingly.
 
 ## Second-Level Pages
 
 | Page Type | URL Pattern | Example |
 |---|---|---|
-| Sub-Service Page | `/[service]/[subservice]/` | `site.com/plumber/24-hour/` |
+| Sub-Service Page | `/[service]/[subservice]/` (flat) **or** `/services/[service]/[subservice]/` (nested) | `site.com/plumber/24-hour/`, `site.com/services/plumber/24-hour/` |
 | Local Landing Page | `/[location]/[service]/` | `site.com/los-angeles/plumber/` |
 | Neighborhood Page | `/[location]/[neighborhood]/` | `site.com/los-angeles/los-feliz/` |
 | Blog Post | `/blog/[post-slug]/` | `site.com/blog/how-to-unclog-a-drain/` |

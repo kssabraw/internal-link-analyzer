@@ -5,6 +5,7 @@ from pathlib import Path
 
 import click
 
+from engine.auditors import ALL_AUDITORS
 from engine.classifier import (
     PageClassification,
     PageType,
@@ -12,9 +13,13 @@ from engine.classifier import (
     read_urls,
 )
 from engine.config import ClientConfig, load as load_config
+from engine.links import read_links
 from engine.registry import SiteRegistry
+from engine.violations import Severity, Violation
 
 LOW_CONFIDENCE_THRESHOLD = 0.7
+
+_SEVERITY_ORDER = {Severity.CRITICAL: 0, Severity.WARNING: 1, Severity.INFO: 2}
 
 
 @click.command()
@@ -41,7 +46,55 @@ def main(
         _run_classify_only(client_dir, config, verbose)
         return
 
-    print("not implemented")
+    _run_audit(client_dir, config, auditor, verbose)
+
+
+def _run_audit(
+    client_dir: Path,
+    config: ClientConfig,
+    auditor_name: str | None,
+    verbose: bool,
+) -> None:
+    urls = read_urls(client_dir / "input")
+    classifications, ignored = classify_all(urls, config)
+    registry = SiteRegistry(classifications, config)
+    links_df = read_links(client_dir / "input")
+
+    if auditor_name is not None:
+        selected = [a for a in ALL_AUDITORS if a.NAME == auditor_name]
+        if not selected:
+            known = ", ".join(a.NAME for a in ALL_AUDITORS)
+            raise click.ClickException(
+                f"Unknown auditor '{auditor_name}'. Known: {known}"
+            )
+    else:
+        selected = list(ALL_AUDITORS)
+
+    all_violations: list[Violation] = []
+    skipped: list[str] = []
+    for auditor in selected:
+        try:
+            violations = auditor.run(registry, links_df, config)
+        except NotImplementedError:
+            skipped.append(auditor.NAME)
+            if verbose:
+                print(f"{auditor.NAME}: not implemented yet (skipped)")
+            continue
+        print(f"{auditor.NAME}: {len(violations)} violations")
+        all_violations.extend(violations)
+
+    output_dir = client_dir / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    _write_violations(output_dir / "violations.csv", all_violations)
+
+    print(
+        f"\nClassified: {len(classifications)}  "
+        f"Ignored: {len(ignored)}  "
+        f"Links: {len(links_df)}  "
+        f"Total violations: {len(all_violations)}"
+    )
+    if skipped:
+        print(f"Skipped (not yet implemented): {', '.join(skipped)}")
 
 
 def _run_classify_only(
@@ -117,6 +170,44 @@ def _write_review(path: Path, review: list[PageClassification]) -> None:
             )
             writer.writerow(
                 [c.url, c.page_type.value, c.raw_path, f"{c.confidence:.2f}", reason]
+            )
+
+
+def _write_violations(path: Path, violations: list[Violation]) -> None:
+    """Write violations.csv sorted by severity, then page_type, then rule, then url."""
+    ordered = sorted(
+        violations,
+        key=lambda v: (
+            _SEVERITY_ORDER[v.severity],
+            v.page_type.value,
+            v.rule,
+            v.source_url,
+        ),
+    )
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            [
+                "rule",
+                "severity",
+                "source_url",
+                "page_type",
+                "expected",
+                "actual",
+                "message",
+            ]
+        )
+        for v in ordered:
+            writer.writerow(
+                [
+                    v.rule,
+                    v.severity.value,
+                    v.source_url,
+                    v.page_type.value,
+                    v.expected or "",
+                    v.actual or "",
+                    v.message,
+                ]
             )
 
 

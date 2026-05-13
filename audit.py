@@ -86,6 +86,18 @@ def _run_audit(
     output_dir = client_dir / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
     _write_violations(output_dir / "violations.csv", all_violations)
+    _write_summary(
+        output_dir / "summary.md",
+        config=config,
+        urls=urls,
+        classifications=classifications,
+        ignored=ignored,
+        links_df=links_df,
+        registry=registry,
+        violations=all_violations,
+        skipped=skipped,
+        auditor_filter=auditor_name,
+    )
 
     print(
         f"\nClassified: {len(classifications)}  "
@@ -209,6 +221,199 @@ def _write_violations(path: Path, violations: list[Violation]) -> None:
                     v.message,
                 ]
             )
+
+
+def _write_summary(
+    path: Path,
+    *,
+    config: ClientConfig,
+    urls: list[str],
+    classifications: list[PageClassification],
+    ignored: list[str],
+    links_df,  # pandas DataFrame; avoid pd import in signature
+    registry: SiteRegistry,
+    violations: list[Violation],
+    skipped: list[str],
+    auditor_filter: str | None,
+) -> None:
+    """Write a human-readable summary.md report.
+
+    Layout: pipeline stats, classification mix, severity / auditor / rule
+    breakdowns, top-N most-violating pages, top-N most-common rules,
+    sitewide findings (rules that fire on essentially every page), and
+    recommended priorities.
+    """
+    from collections import Counter
+    from datetime import datetime
+
+    n_pages = len(classifications)
+    by_type: Counter[PageType] = Counter(c.page_type for c in classifications)
+    by_severity = Counter(v.severity for v in violations)
+    by_auditor: Counter[str] = Counter(v.rule.split(".", 1)[0] for v in violations)
+    by_rule = Counter(v.rule for v in violations)
+    by_source = Counter(v.source_url for v in violations)
+    conflict_clusters = len(registry.get_canonical_conflicts())
+
+    # Sitewide rules: fire on every classified page (>= n_pages, accounting for
+    # self-exemption which can drop by 1).
+    sitewide_rules = [
+        (rule, count)
+        for rule, count in by_rule.most_common()
+        if n_pages and count >= n_pages - 1 and not rule.startswith("duplicate_links")
+    ]
+
+    lines: list[str] = []
+    a = lines.append
+
+    a(f"# Internal Linking Audit Report — {config.client}")
+    a("")
+    a(
+        f"_Generated {datetime.now().strftime('%Y-%m-%d %H:%M')} "
+        f"for `{config.domain}`._"
+    )
+    if auditor_filter:
+        a("")
+        a(f"> Filtered to auditor `{auditor_filter}` only.")
+    a("")
+    a("## Pipeline summary")
+    a("")
+    a("| Stage | Result |")
+    a("|---|---:|")
+    a(f"| URLs read | {len(urls):,} |")
+    a(f"| Classified | {n_pages:,} |")
+    a(f"| Ignored (per `url_patterns_to_ignore`) | {len(ignored):,} |")
+    a(f"| Internal links analyzed | {len(links_df):,} |")
+    a(f"| Canonical conflict clusters | {conflict_clusters} |")
+    a(f"| **Total violations** | **{len(violations):,}** |")
+    if skipped:
+        a(f"| Auditors skipped (not implemented) | {', '.join(skipped)} |")
+    a("")
+
+    a("## Classification breakdown")
+    a("")
+    a("| Page type | Count |")
+    a("|---|---:|")
+    for pt, n in sorted(by_type.items(), key=lambda kv: -kv[1]):
+        a(f"| `{pt.value}` | {n:,} |")
+    a("")
+
+    a("## Violations by severity")
+    a("")
+    a("| Severity | Count |")
+    a("|---|---:|")
+    for sev in (Severity.CRITICAL, Severity.WARNING, Severity.INFO):
+        n = by_severity.get(sev, 0)
+        if n:
+            a(f"| {sev.value} | {n:,} |")
+    a("")
+
+    a("## Violations by auditor")
+    a("")
+    a("| Auditor | Violations |")
+    a("|---|---:|")
+    for auditor in sorted(
+        {a_.NAME for a_ in ALL_AUDITORS}, key=lambda n: -by_auditor.get(n, 0)
+    ):
+        n = by_auditor.get(auditor, 0)
+        a(f"| `{auditor}` | {n:,} |")
+    a("")
+
+    a("## Violations by rule")
+    a("")
+    a("| Rule | Severity | Count |")
+    a("|---|---|---:|")
+    rule_severity = {v.rule: v.severity for v in violations}
+    for rule, n in by_rule.most_common():
+        a(f"| `{rule}` | {rule_severity[rule].value} | {n:,} |")
+    a("")
+
+    if sitewide_rules:
+        a("## Sitewide structural findings")
+        a("")
+        a(
+            "Rules that fire on essentially every classified page indicate a "
+            "structural / template-level issue rather than per-page problems "
+            "to fix one-by-one. Address these first."
+        )
+        a("")
+        a("| Rule | Pages affected |")
+        a("|---|---:|")
+        for rule, count in sitewide_rules:
+            a(f"| `{rule}` | {count:,} |")
+        a("")
+
+    top_n = 15
+    if by_source:
+        a(f"## Top {top_n} most-violating pages")
+        a("")
+        a("| Violations | Page |")
+        a("|---:|---|")
+        for src, n in by_source.most_common(top_n):
+            a(f"| {n:,} | `{src}` |")
+        a("")
+
+    a("## Recommended priorities")
+    a("")
+    a("Suggested order of attack, highest signal-to-effort first:")
+    a("")
+    priorities: list[str] = []
+
+    if sitewide_rules:
+        priorities.append(
+            "**Fix the sitewide structural issues** listed above first — "
+            "each one resolved drops violations by the page count in one move."
+        )
+    if conflict_clusters:
+        priorities.append(
+            f"**Consolidate the {conflict_clusters} canonical-conflict clusters** "
+            "(see `canonical_conflicts.duplicate_*` rows in `violations.csv`). "
+            "Duplicate URLs that classify identically also inflate `service_silo`, "
+            "`location_silo`, and `click_depth` counts — fixing them cascades."
+        )
+    unreachable = by_rule.get("click_depth.unreachable", 0)
+    if unreachable:
+        priorities.append(
+            f"**Restore internal links to the {unreachable} unreachable pages** "
+            "(see `click_depth.unreachable` in `violations.csv`). These can't "
+            "be crawled at all via site navigation."
+        )
+    silo_total = sum(
+        n for r, n in by_rule.items() if "silo.missing" in r
+    )
+    if silo_total:
+        priorities.append(
+            f"**Fix the {silo_total:,} silo-linking gaps** "
+            "(`service_silo.*`, `location_silo.*`, `neighborhood_silo.*`). "
+            "These are the core SOP rules for parent→child link coverage."
+        )
+    duplicate_count = by_rule.get(
+        "duplicate_links.same_target_multiple_times", 0
+    )
+    if duplicate_count > 1000:
+        priorities.append(
+            f"**Review the {duplicate_count:,} `duplicate_links` violations** — "
+            "this typically indicates mega-footer template duplication. "
+            "Consider reducing footer link density or extending the UI-anchor "
+            "allowlist in the auditor."
+        )
+
+    if not priorities:
+        priorities.append(
+            "No major structural issues found. Audit per-page violations in "
+            "`violations.csv` for fine-tuning."
+        )
+
+    for i, p in enumerate(priorities, 1):
+        a(f"{i}. {p}")
+    a("")
+    a("---")
+    a("")
+    a(
+        "_See `violations.csv` for the full per-violation list and "
+        "`registry_summary.csv` for the classification index._"
+    )
+
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def _write_registry_summary(path: Path, registry: SiteRegistry) -> None:

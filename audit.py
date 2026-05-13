@@ -5,6 +5,7 @@ from pathlib import Path
 
 import click
 
+from engine.action_list import write_action_list
 from engine.auditors import ALL_AUDITORS
 from engine.classifier import (
     PageClassification,
@@ -86,6 +87,13 @@ def _run_audit(
     output_dir = client_dir / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
     _write_violations(output_dir / "violations.csv", all_violations)
+    write_action_list(
+        output_dir / "action_list.md",
+        output_dir / "action_list.csv",
+        violations=all_violations,
+        registry=registry,
+        config=config,
+    )
     _write_summary(
         output_dir / "summary.md",
         config=config,

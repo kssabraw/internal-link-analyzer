@@ -359,6 +359,25 @@ def _classify_path(
                     confidence=conf,
                 )
 
+            # [location] + flat service-in-same-location (redundant-location pattern,
+            # e.g. /long-island/microsoft-consulting-in-long-island)
+            same_loc_idx: dict[str, str] = {
+                alias: canonical
+                for alias, canonical in loc_idx.items()
+                if canonical == loc_slug
+            }
+            svc_loc = _try_split(s2, svc_idx, same_loc_idx)
+            if svc_loc is not None:
+                svc, _loc, conf = svc_loc
+                return PageClassification(
+                    url=url,
+                    page_type=PageType.LOCAL_LANDING,
+                    location=loc_slug,
+                    service=svc,
+                    raw_path=path,
+                    confidence=conf,
+                )
+
         return PageClassification(
             url=url, page_type=PageType.UNKNOWN, raw_path=path, confidence=0.0
         )

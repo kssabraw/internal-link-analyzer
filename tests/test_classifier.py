@@ -182,6 +182,30 @@ def test_local_landing_flat_service_plus_neighborhood(
     assert c.confidence == 0.8
 
 
+def test_local_landing_redundant_location_with_in_infix(
+    config: ClientConfig,
+) -> None:
+    """WHIT redundant-location pattern: /[loc]/[svc]-in-[same-loc]."""
+    c = classify("https://example.com/los-angeles/plumber-in-los-angeles", config)
+    assert c is not None
+    assert c.page_type == PageType.LOCAL_LANDING
+    assert c.location == "los-angeles"
+    assert c.service == "plumber"
+    assert c.confidence == 0.8
+
+
+def test_local_landing_redundant_location_hyphen_split(
+    config: ClientConfig,
+) -> None:
+    """Redundant location without -in- infix: /[loc]/[svc]-[same-loc]."""
+    c = classify("https://example.com/los-angeles/plumber-los-angeles", config)
+    assert c is not None
+    assert c.page_type == PageType.LOCAL_LANDING
+    assert c.location == "los-angeles"
+    assert c.service == "plumber"
+    assert c.confidence == 0.8
+
+
 # --------------------------------------------------------------------------- #
 # Sub-service and subservice landing
 # --------------------------------------------------------------------------- #

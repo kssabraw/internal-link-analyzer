@@ -1,0 +1,649 @@
+# WheelHouse IT — Internal Linking Audit Config
+# Drop this in clients/wheelhouseit/config.yml
+#
+# Decisions baked in:
+# - Option B: vertical-specific services are distinct service entries
+# - Canonical slug picked per service; competing variants listed as aliases
+# - URL patterns that aren't commercial pages (lead magnets, events, donations,
+#   awards, hurricane content, support pages) are routed to url_patterns_to_ignore
+#
+# Items marked "REVIEW:" in comments are decisions the human should confirm.
+# Items marked "CANONICAL-CONFLICT-WATCH:" are aliases that probably represent
+# duplicate pages on the live site — the canonical_conflicts auditor will flag them.
+
+client: wheelhouseit
+domain: wheelhouseit.com
+
+# ============================================================================
+# LOCATIONS (metros, plus neighborhoods nested under their parent location)
+# ============================================================================
+
+locations:
+  - slug: fort-lauderdale
+    display: Fort Lauderdale
+    aliases: []
+    neighborhoods: []
+
+  - slug: miami
+    display: Miami
+    aliases: []
+    neighborhoods: []
+
+  - slug: orlando
+    display: Orlando
+    aliases: []
+    neighborhoods:
+      - slug: hibiscus
+        display: Hibiscus
+      - slug: central-business-district
+        display: Central Business District
+        aliases: [cbd]
+      - slug: south-orange
+        display: South Orange
+      - slug: northeast-orlando
+        display: Northeast Orlando
+        aliases: [northeast]
+      - slug: edgewood
+        display: Edgewood
+      - slug: baldwin-park
+        display: Baldwin Park
+        aliases: [baldwin-park-florida]
+      - slug: milk-district
+        display: Milk District
+        aliases: [milk-district-florida]
+      - slug: millenia
+        display: Millenia
+        aliases: [millenia-florida]
+      - slug: parramore
+        display: Parramore
+        aliases: [parramore-florida]
+      - slug: wadeview-park
+        display: Wadeview Park
+        aliases: [wadeview-park-florida]
+
+  - slug: west-palm-beach
+    display: West Palm Beach
+    aliases: [wpb]
+    neighborhoods: []
+
+  - slug: new-york-city
+    display: New York City
+    aliases: [nyc, new-york]
+    neighborhoods:
+      - slug: manhattan
+        display: Manhattan
+      - slug: brooklyn
+        display: Brooklyn
+      - slug: astoria
+        display: Astoria
+      - slug: bensonhurst
+        display: Bensonhurst
+      - slug: chinatown
+        display: Chinatown
+      - slug: upper-west-side
+        display: Upper West Side
+      - slug: williamsburg
+        display: Williamsburg
+
+  - slug: long-island
+    display: Long Island
+    aliases: []
+    neighborhoods: []
+
+  - slug: nassau-county
+    display: Nassau County
+    aliases: []
+    neighborhoods: []
+
+  - slug: los-angeles
+    display: Los Angeles
+    aliases: [la]
+    neighborhoods: []
+
+# ============================================================================
+# SERVICES — General (cross-vertical) IT services
+# ============================================================================
+
+services:
+  # Core service portfolio
+  - slug: it-support
+    display: IT Support
+    aliases:
+      - it-support-firm                    # /fort-lauderdale/it-support-firm
+      - it-support-for-companies           # /fort-lauderdale/it-support-for-companies
+      - it-support-outsourcing             # /fort-lauderdale/it-support-outsourcing
+      - remote-it-support-services         # /fort-lauderdale/remote-it-support-services
+      - it-support-evolved                 # /it-support-evolved
+      - onsite-support                     # /orlando/onsite-support
+      - remote-support
+      - international-it-support
+
+  - slug: managed-it-services
+    display: Managed IT Services
+    aliases:
+      - managed-it
+      - managed-services
+      - managed-it-support-provider        # /fort-lauderdale/managed-it-support-provider
+      - managed-services-provider-in       # /nassau-county/managed-services-provider-in-nassau-county
+      - managed-it-services-ny
+      - managed-it-services-v2             # CANONICAL-CONFLICT-WATCH: duplicate
+      - it-services                        # /nassau-county/it-services
+      - it-company                         # /nassau-county/it-company-in-nassau-county
+      - it-outsourcing                     # /nassau-county/it-outsourcing-in-nassau-county
+      - managed-it-in                      # /orlando/managed-it-in-baldwin-park-florida etc.
+
+  - slug: co-managed-it-services
+    display: Co-Managed IT Services
+    aliases:
+      - co-managed-it
+      - co-managed-it-services-in          # /co-managed-it-services-in-fort-lauderdale etc.
+
+  - slug: cyber-security
+    display: Cybersecurity
+    aliases:
+      - cybersecurity
+      - cybersecurity-services             # /cybersecurity-services-fort-lauderdale
+
+  - slug: cloud-services
+    display: Cloud Services
+    aliases:
+      - cloud-managed-services
+      - managed-cloud-environment
+      - cloud-management
+      - cloud-servers
+
+  - slug: it-consulting
+    display: IT Consulting
+    aliases:
+      - it-consulting-services             # /fort-lauderdale/it-consulting-services
+      - it-consulting-services-in          # /it-consulting-services-in-new-york
+      - it-consulting-in                   # /orlando/it-consulting-in-south-orange etc.
+
+  - slug: hybrid-it-services
+    display: Hybrid IT Services
+    aliases:
+      - hybrid-it-services-copy            # CANONICAL-CONFLICT-WATCH: duplicate
+      - hybrid-it-services-copy-2          # CANONICAL-CONFLICT-WATCH: duplicate
+      - hybrid-it-onboarding
+
+  - slug: network-installation-services
+    display: Network Installation Services
+    aliases: []
+
+  - slug: modern-workplace
+    display: Modern Workplace
+    aliases: []
+
+  - slug: structured-cabling
+    display: Structured Cabling
+    aliases: []
+
+  - slug: managed-detection-and-response
+    display: Managed Detection and Response
+    aliases: [mdr]
+
+  - slug: penetration-testing
+    display: Penetration Testing
+    aliases: []
+
+  - slug: vulnerability-testing
+    display: Vulnerability Testing
+    aliases: []
+
+  - slug: voip
+    display: VoIP
+    aliases:
+      - office-365-voip
+      - microsoft-365-voip-phone
+
+  # ---------- Microsoft / Cloud platform services ----------
+
+  - slug: microsoft-365
+    display: Microsoft 365
+    aliases:
+      - microsoft-office-365
+      - office-365
+      - office365
+      - microsoft-365-business
+      - microsoft-365-business-voice
+      - microsoft-365-enterprise
+      - microsoft-365-for-business
+      - microsoft-365-for-enterprise
+      - microsoft-solutions-for-business
+      - microsoft-automation
+      - microsoft-365-azure
+      - office365-azure
+
+  - slug: microsoft-365-copilot
+    display: Microsoft 365 Copilot
+    aliases: []
+
+  - slug: microsoft-copilot
+    display: Microsoft Copilot
+    aliases: []
+    # NOTE: distinct from microsoft-365-copilot per project decision.
+    # Both have parallel subservice trees (copilot-in-excel, -outlook, -powerpoint, -word).
+
+  - slug: azure
+    display: Azure
+    aliases: []
+
+  - slug: office-365-migration
+    display: Office 365 Migration
+    aliases: []
+
+  - slug: microsoft-consultants
+    display: Microsoft Consultants
+    aliases:
+      - microsoft-consulting               # /long-island/microsoft-consulting-in-long-island
+      - microsoft-consultants-orlando
+
+  - slug: sharepoint-one-drive
+    display: SharePoint and OneDrive
+    aliases: []
+
+  - slug: skype-for-business-teams
+    display: Skype for Business / Teams
+    aliases: []
+
+  # ---------- Security / Compliance / Management services ----------
+  # NOTE: many of these are arguably feature pages rather than standalone services.
+  # Per project decision, keep as distinct services for v1; revisit if audit noise warrants.
+
+  - slug: hipaa-compliance
+    display: HIPAA Compliance
+    aliases: []
+
+  - slug: soc-2
+    display: SOC 2
+    aliases: [soc-2-type-1-compliance]
+
+  - slug: pci
+    display: PCI
+    aliases: []
+
+  - slug: gdpr
+    display: GDPR
+    aliases: []
+
+  - slug: managed-security
+    display: Managed Security
+    aliases: []
+
+  - slug: security-compliance
+    display: Security Compliance
+    aliases: []
+
+  - slug: security-solutions
+    display: Security Solutions
+    aliases: []
+
+  - slug: compliance-automation
+    display: Compliance Automation
+    aliases: []
+
+  - slug: compliance-monitoring-reporting
+    display: Compliance Monitoring and Reporting
+    aliases: []
+
+  - slug: compliance-service
+    display: Compliance Service
+    aliases: []
+
+  - slug: backup-management
+    display: Backup Management
+    aliases: []
+
+  - slug: patch-management
+    display: Patch Management
+    aliases: []
+
+  - slug: network-management
+    display: Network Management
+    aliases: []
+
+  - slug: network-monitoring
+    display: Network Monitoring
+    aliases: []
+
+  - slug: endpoint-management
+    display: Endpoint Management
+    aliases: []
+
+  - slug: next-gen-endpoint-protection
+    display: Next-Gen Endpoint Protection
+    aliases: []
+
+  - slug: email-encryption
+    display: Email Encryption
+    aliases: []
+
+  - slug: byod-security
+    display: BYOD Security
+    aliases: []
+
+  - slug: mobile-device-management
+    display: Mobile Device Management
+    aliases: [mdm]
+
+  - slug: configuration-management
+    display: Configuration Management
+    aliases: []
+
+  - slug: documentation-management
+    display: Documentation Management
+    aliases: []
+
+  - slug: collaboration-tools
+    display: Collaboration Tools
+    aliases: []
+
+  - slug: helpdesk-software
+    display: Helpdesk Software
+    aliases: []
+
+  - slug: it-service-management
+    display: IT Service Management
+    aliases: []
+
+  - slug: disaster-recovery
+    display: Disaster Recovery
+    aliases: [disaster-recovery-services]
+
+  - slug: soc-siem
+    display: SOC / SIEM
+    aliases: []
+
+  - slug: telecom-consulting
+    display: Telecom Consulting
+    aliases: []
+
+  - slug: web-design-marketing
+    display: Web Design and Marketing
+    aliases: []
+
+  - slug: website-hosting
+    display: Website Hosting
+    aliases: []
+
+  - slug: online-presence-management
+    display: Online Presence Management
+    aliases: []
+
+  - slug: project-management
+    display: Project Management
+    aliases: []
+
+  - slug: risk-assessment
+    display: Risk Assessment
+    aliases: []
+
+  # ============================================================================
+  # VERTICAL-SPECIFIC SERVICES (Option B: each vertical × service combo is distinct)
+  # ============================================================================
+
+  # ---------- Healthcare vertical ----------
+
+  - slug: healthcare-it-managed-services
+    display: Healthcare IT Managed Services
+    aliases:
+      - healthcare-it-outsourcing
+      - medical-it-services
+      - it-solutions-healthcare              # /it-solutions-healthcare-2 minus the suffix
+      - it-solutions-healthcare-2            # CANONICAL-CONFLICT-WATCH
+
+  - slug: healthcare-it-support
+    display: Healthcare IT Support
+    aliases: []
+
+  - slug: healthcare-it-consulting
+    display: Healthcare IT Consulting
+    aliases: []
+
+  - slug: healthcare-cyber-security
+    display: Healthcare Cybersecurity
+    aliases: [cybersecurity-for-healthcare]
+
+  # ---------- Law firms / legal vertical ----------
+
+  - slug: managed-it-services-for-law-firms
+    display: Managed IT Services for Law Firms
+    aliases: []
+
+  - slug: it-support-for-law-firms
+    display: IT Support for Law Firms
+    aliases:
+      - it-support-for-legal
+      - it-support-law-firm                # /fort-lauderdale/it-support-law-firm etc.
+
+  - slug: cybersecurity-for-law-firms
+    display: Cybersecurity for Law Firms
+    aliases: []
+
+  - slug: hipaa-compliance-for-law-firms
+    display: HIPAA Compliance for Law Firms
+    aliases: []
+
+  - slug: law-firm-technology-consultants
+    display: Law Firm Technology Consultants
+    aliases: [legal-technology-consultants]
+
+  # ---------- Manufacturing vertical ----------
+
+  - slug: managed-it-services-for-manufacturing
+    display: Managed IT Services for Manufacturing
+    aliases: []
+
+  - slug: cybersecurity-for-manufacturing
+    display: Cybersecurity for Manufacturing
+    aliases: []
+
+  # ---------- Other verticals ----------
+
+  - slug: managed-it-services-for-non-profits
+    display: Managed IT Services for Non-Profits
+    aliases: []
+
+  - slug: aviation-it-support
+    display: Aviation IT Support
+    aliases: []
+
+  - slug: it-services-for-the-real-estate-industry
+    display: IT Services for the Real Estate Industry
+    aliases: []
+
+  - slug: it-services-for-the-marine-industry
+    display: IT Services for the Marine Industry
+    aliases: []
+
+  - slug: it-services-for-accounting-firms-finance
+    display: IT Services for Accounting Firms and Finance
+    aliases: []
+
+  - slug: it-services-insurance
+    display: IT Services for Insurance
+    aliases: []
+
+  - slug: it-support-for-architects
+    display: IT Support for Architects
+    aliases: []
+
+  - slug: construction-it-services
+    display: Construction IT Services
+    aliases: []
+
+  - slug: private-equity-it-support
+    display: Private Equity IT Support
+    aliases: []
+
+  - slug: private-equity-managed-it
+    display: Private Equity Managed IT
+    aliases: []
+
+  - slug: private-equity-cybersecurity
+    display: Private Equity Cybersecurity
+    aliases: []
+
+# ============================================================================
+# SUBSERVICES — service-specific child pages
+# ============================================================================
+
+subservices:
+  # Microsoft 365 Copilot suite
+  - parent: microsoft-365-copilot
+    slug: copilot-in-excel
+    display: Copilot in Excel
+    aliases: []
+
+  - parent: microsoft-365-copilot
+    slug: copilot-in-outlook
+    display: Copilot in Outlook
+    aliases: []
+
+  - parent: microsoft-365-copilot
+    slug: copilot-in-powerpoint
+    display: Copilot in PowerPoint
+    aliases: []
+
+  - parent: microsoft-365-copilot
+    slug: copilot-in-word
+    display: Copilot in Word
+    aliases: []
+
+  # Microsoft Copilot suite (distinct from Microsoft 365 Copilot per decision)
+  - parent: microsoft-copilot
+    slug: copilot-in-excel
+    display: Copilot in Excel
+    aliases: []
+
+  - parent: microsoft-copilot
+    slug: copilot-in-outlook
+    display: Copilot in Outlook
+    aliases: []
+
+  - parent: microsoft-copilot
+    slug: copilot-in-powerpoint
+    display: Copilot in PowerPoint
+    aliases: []
+
+  - parent: microsoft-copilot
+    slug: copilot-in-word
+    display: Copilot in Word
+    aliases: []
+
+  # Azure suite
+  - parent: azure
+    slug: azure-virtual-desktop
+    display: Azure Virtual Desktop
+    aliases: []
+
+  - parent: azure
+    slug: azure-active-directory-premium
+    display: Azure Active Directory Premium
+    aliases: []
+
+  - parent: azure
+    slug: azure-management-security-backups
+    display: Azure Management, Security, and Backups
+    aliases: []
+
+# ============================================================================
+# URL patterns to ignore (regex). The classifier skips these.
+# ============================================================================
+
+url_patterns_to_ignore:
+  # System / infrastructure
+  - ^/cdn-cgi/
+  - ^/author/
+  - ^/wp-admin/
+  - ^/feed/?$
+  - ^/sitemap
+
+  # Blog tags and categories (kept separate from actual blog posts)
+  - ^/blog/tag/
+  - ^/blog/category/
+
+  # Events, donations, internal celebrations
+  - ^/2023-hipaa-wine-tasting$
+  - ^/2024-eoy-90s-party$
+  - ^/happynewyear-teamalpha$
+  - ^/charity-donation$
+  - ^/sunserve-donation$
+  - ^/undercoversanta-donation$
+  - ^/elegance-and-ethics$
+  - ^/inc-500$
+  - ^/wheelhouse-it-vitalopps$
+
+  # Lead magnets / checklists / one-off resources
+  - ^/msp-buyers-guide-checklist$
+  - ^/cybersecurity-checklist$
+  - ^/hipaa-compliance-for-healthcare-checklist$
+  - ^/hurricane-
+  - ^/storm$
+  - ^/top-7-tips-for-preparing-
+  - ^/how-to-prepare-your-electronics-against-disaster$
+  - ^/how-to-protect-your-organization-against-power-surges$
+  - ^/how-to-perform-regular-checks-on-your-disaster-recovery-plan$
+  - ^/the-comprehensive-guide-to-disaster-recovery$
+  - ^/3-elements-multi-tiered-disaster-recovery-plan$
+  - ^/6-steps-to-avoid-hipaa-fines$
+  - ^/business-associate-agreement$
+  - ^/services-guide$
+
+  # Thank-you and form-flow pages
+  - ^/thank-you
+  - ^/save-money-discover-your-it$
+  - ^/discover-your-it$
+
+  # Article-style content sitting at root (should probably be moved to /blog/)
+  # REVIEW: these may need to be flagged as misplaced rather than ignored
+  - ^/how-to-apply-inbound-marketing-to-your-business$
+  - ^/how-to-manage-a-team-remotely$
+  - ^/microsoft-modern-office-everything-you-need-to-know$
+  - ^/microsoft-teams-makes-managing-telecommuting-employees-easy$
+  - ^/enhance-your-teams-online-collaboration-using-microsoft-sharepoint$
+  - ^/collaborate-on-visio-files-inside-microsoft-teams$
+  - ^/does-your-business-need-to-upgrade-to-business-grade-wifi$
+  - ^/what-can-you-integrate-with-your-crm-solution$
+  - ^/understanding-how-managed-service-providers-reduce-it-security-issues$
+  - ^/it-buzzwords-to-know-in-2021$
+  - ^/lets-buy-a-computer-part-
+  - ^/streamline-it$
+  - ^/unrivaled-it-partnership$
+  - ^/the-nine$
+  - ^/terminating-underperforming-msp$
+  - ^/support-for-windows-10-end-of-life$
+  - ^/identifying-the-value-of-managed-it-     # 5 separate pages on this topic
+  - ^/dark-web$
+  - ^/it-security-tools$
+  - ^/security-audit-definitions$
+  - ^/remote-desktop-tools$
+  - ^/on-premise-server-tracker$
+
+  # "About" and supplementary pages without SOP equivalents (handled separately)
+  - ^/standards$
+  - ^/mission-statement-core-values$
+  - ^/leadership-team$
+  - ^/management-team$
+  - ^/the-nine$
+  - ^/news$
+  - ^/press$
+  - ^/resources$
+  - ^/webinars$
+  - ^/faq$
+  - ^/assessment$
+  - ^/careers$
+  - ^/client-case-study$
+  - ^/accessibility-statement$
+  - ^/industries$
+  - ^/training$
+  - ^/training/
+
+  # Customer login / portal
+  - ^/support$            # Customer login portal, not an IT Support service page
+
+  # Form pages — NOTE: WHIT uses /company and /contact instead of /about-us/ and /contact-us/.
+  # Per project decision, leave these ignored. Universal nav auditor will fire "missing
+  # About Us / Contact Us link" on most pages as a result — that noise is accepted v1.
+  - ^/contact$
+  - ^/company$

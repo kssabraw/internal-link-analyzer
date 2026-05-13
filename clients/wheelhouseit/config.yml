@@ -378,6 +378,24 @@ services:
     display: Risk Assessment
     aliases: []
 
+  # ---------- Azure platform services (flat at root, not nested under /azure/) ----------
+
+  - slug: azure-virtual-desktop
+    display: Azure Virtual Desktop
+    aliases: []
+
+  - slug: azure-active-directory-premium
+    display: Azure Active Directory Premium
+    aliases: []
+
+  - slug: azure-management-security-backups
+    display: Azure Management, Security, and Backups
+    aliases: []
+
+  - slug: cyber-security-automation
+    display: Cybersecurity Automation
+    aliases: []
+
   # ============================================================================
   # VERTICAL-SPECIFIC SERVICES (Option B: each vertical × service combo is distinct)
   # ============================================================================
@@ -531,22 +549,6 @@ subservices:
     display: Copilot in Word
     aliases: []
 
-  # Azure suite
-  - parent: azure
-    slug: azure-virtual-desktop
-    display: Azure Virtual Desktop
-    aliases: []
-
-  - parent: azure
-    slug: azure-active-directory-premium
-    display: Azure Active Directory Premium
-    aliases: []
-
-  - parent: azure
-    slug: azure-management-security-backups
-    display: Azure Management, Security, and Backups
-    aliases: []
-
 # ============================================================================
 # URL patterns to ignore (regex). The classifier skips these.
 # ============================================================================
@@ -554,7 +556,7 @@ subservices:
 url_patterns_to_ignore:
   # System / infrastructure
   - ^/cdn-cgi/
-  - ^/author/
+  - ^/author(/.*)?$
   - ^/wp-admin/
   - ^/feed/?$
   - ^/sitemap
@@ -628,6 +630,7 @@ url_patterns_to_ignore:
   - ^/the-nine$
   - ^/news$
   - ^/press$
+  - ^/press/
   - ^/resources$
   - ^/webinars$
   - ^/faq$
